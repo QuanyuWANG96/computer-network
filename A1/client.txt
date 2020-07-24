@@ -1,0 +1,50 @@
+r_port: 7361
+NO MSG
+
+r_port: 7383
+7361: mess
+NO MSG
+
+r_port: 34121
+NO MSG
+
+r_port: 56571
+34121: message 1
+NO MSG
+
+r_port: 42839
+34121: message 1
+56571: TEMINATE
+NO MSG
+
+r_port: 40535
+NO MSG
+
+r_port: 54153
+NO MSG
+
+r_port: 52159
+NO MSG
+
+Error server_unavailable
+
+r_port: 33473
+NO MSG
+
+Invalid req_code
+
+r_port: 44607
+33473: message 1
+NO MSG
+
+r_port: 53917
+33473: message 1
+44607: messddddage 1
+NO MSG
+
+r_port: 53405
+33473: message 1
+44607: messddddage 1
+53917: messddddage2
+NO MSG
+
