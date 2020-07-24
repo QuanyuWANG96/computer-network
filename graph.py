@@ -34,7 +34,7 @@ class Vertex:
     #     self,next = next
 
     def __str__(self):
-        return str(self.id) + ' adjacent: ' + str([x.id for x in self.adjacent])
+        return str(self.id) + ' adjacent: ' + str([x for x in self.adjacent.keys()])
 
 
 class Graph:
@@ -66,4 +66,12 @@ class Graph:
 
     def get_all_vertex(self):
         return self.vertex.keys()
+
+    def __str__(self):
+        for vtx in self.get_all_vertex():
+            print("vertex:" + str(vtx))
+            print(self.get_vertex(vtx))
+        # print("end")
+        return str([self.vertex[x] for x in self.vertex.keys()])
+
 

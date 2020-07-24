@@ -13,8 +13,8 @@ class Router:
         self.id = id
         self.graph = Graph()
         self.routing_table = {}  # key: neighbour , value : {key: next_hop, cost, value: neighbour, cost}
-        self.cache = []  # [sender_id, sender_link_id, router_id, router_link_id, router_link_cost]
-        self.rcv_info = []  # [routerID, routerLinkID, routerLinkCost]
+        self.cache = set()  # [router_id, router_link_id, router_link_cost]
+        self.rcv_info = set()  # [routerID, routerLinkID, routerLinkCost]
         self.links = {}  # key : linkID, value : linkCost
 
         self.graph.add_vertex(self.id)
@@ -41,8 +41,8 @@ class Router:
             temp["cost"] = vtx_adj.links[linkID]
             self.routing_table[neighbor] = temp
 
-        # print("%%%%%%%%%%%%%init routing table%%%%%%%%%%%%%%%%%%")
-        # print(self.routing_table)
+        print("%%%%%%%%%%%%%init routing table%%%%%%%%%%%%%%%%%%")
+        print(self.routing_table)
 
         # calculate the shortest path
         # init vertex set and distance
@@ -56,6 +56,9 @@ class Router:
             D[neighbor] = vtx_adj.links[linkID]
         D[self.id] = 0
         N.remove(self.graph.get_vertex(self.id))
+        # print("D :"+ str(D))
+        # print("N:" + str(N))
+        # print("graph : " + str(self.graph))
 
         while N:
             min_dist = sys.maxsize
@@ -84,11 +87,18 @@ class Router:
                     D[neighbor] =new_dist
 
         # updata routing table
-        self.routing_table.pop(self.id)
+        if self.id in self.routing_table.keys():
+            self.routing_table.pop(self.id)
+
         for route in self.routing_table.keys():
             self.routing_table[route]["cost"] = D[route]
             if D[route] >= sys.maxsize:
                 del self.routing_table[route]
+
+
+        print("D :" + str(D))
+        print("graph : " + str(self.graph))
+        print("routing table: " + str(self.routing_table))
 
         # write to topology file
         topo_path = 'topology_'+ str(self.id) + '.out'
@@ -126,16 +136,19 @@ class Router:
             data += struct.pack("!i", link)  # router_link_id
             data += struct.pack("!i", self.links[link])  # router_link_cost
             self.udp_socket.sendto(data, (nfe_ip, nfe_port))
-            print("Sending(E): SID(" + str(self.id) + "), SLID(" + str(link) + "), RID("+ str(self.id) + "), RLID(" + str(link) + "), LC(" + str(self.links[link])+ ")" + "\n")
+            print("Sending(E): SID(" + str(self.id) + "), SLID(" + str(link) + "), RID("+ str(self.id) + "), RLID(" + str(link) + "), LC(" + str(self.links[link])+ ")" )
 
     def send_forwarding(self, nfe_ip, nfe_port):
         # forwarding phase (LSA)
         while True:
-            for sender_id, sender_link_id, router_id, router_link_id, router_link_cost in self.cache:
-                if [router_id, router_link_id, router_link_cost] not in self.rcv_info:
-                    # print("it is a new link info and have not received")
-                    self.rcv_info.append([router_id, router_link_id, router_link_cost])
+            # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+            # # print(self.cache)
+            # print(self.rcv_info)
+            lock.acquire()
 
+            for router_id, router_link_id, router_link_cost in self.rcv_info:
+                if (router_id, router_link_id, router_link_cost) not in self.cache:
+                    self.cache.add((router_id, router_link_id, router_link_cost))
                     # send the info to nfe
                     for link in self.links.keys():
                         data = struct.pack("!i", 3)  # message type, 0x3
@@ -147,31 +160,28 @@ class Router:
                         self.udp_socket.sendto(data, (nfe_ip, nfe_port))
                         print("Sending(F): SID(" + str(self.id) + "), SLID(" + str(link) + "), RID(" + str(
                             router_id) + "), RLID(" + str(router_link_id) + "), LC(" + str(
-                            router_link_cost) + ")" + "\n")
+                            router_link_cost) + ")")
 
                     # get info from rcv_info, updata graph
-                    lock.acquire()
+
                     for v in self.graph.get_all_vertex():
                         vtx = self.graph.get_vertex(v)
-                        if router_link_id in vtx.links.keys() and router_id != vtx.id:
+                        if router_link_id in list(vtx.links.keys()) and router_id != vtx.id:
                             self.graph.add_edge(v, router_id, router_link_id)
-                            # print("add edge from " + str(v) + " to " + str(router_id) + " through link " + str(
-                            #     router_link_id) + "with cost " + str(router_link_cost))
-                    lock.release()
+                            print("add edge from " + str(v) + " to " + str(router_id) + " through link " + str(
+                                router_link_id) + "with cost " + str(router_link_cost))
+            lock.release()
 
-                # drop duplicate router info
-                else:
-                    print("Droping: SID(" + str(sender_id) + "), SLID(" + str(sender_link_id) + "), RID(" + str(
-                        router_id) + "), RLID(" + str(router_link_id) + "), LC(" + str(
-                        router_link_cost) + ")" + "\n")
+            # calculate the latest shortest path and updata routing table
+            self.dijkstra()
 
-                # calculate the latest shortest path and updata routing table
-                self.dijkstra()
+            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+            # print(self.cache)
+            print(self.rcv_info)
 
-                # delete cur router info in cache
-                lock.acquire()
-                self.cache.clear()
-                lock.release()
+
+
+
 
     def receive_init(self):
         # receive the init reply
@@ -228,20 +238,30 @@ class Router:
             router_link_cost = data[5]
             print("Received: SID(" + str(sender_id) + "), SLID(" + str(sender_link_id) + "), RID(" + str(
                 router_id) + "), RLID(" + str(router_link_id) + "), LC(" + str(
-                router_link_cost) + ")" + "\n")
+                router_link_cost) + ")" )
+
+            # drop duplicate router info
+            if (router_id, router_link_id, router_link_cost) in self.rcv_info:
+                print("Droping: SID(" + str(sender_id) + "), SLID(" + str(sender_link_id) + "), RID(" + str(
+                    router_id) + "), RLID(" + str(router_link_id) + "), LC(" + str(
+                    router_link_cost) + ")")
+            else:
+                lock.acquire()
+                self.rcv_info.add((router_id, router_link_id, router_link_cost))
+                lock.release()
 
             lock.acquire()
-            self.cache.append([sender_id, sender_link_id, router_id, router_link_id, router_link_cost])
-
             self.graph.add_vertex(sender_id)
             self.graph.add_vertex(router_id)
             self.graph.add_vertex_link(router_id, router_link_id, router_link_cost)
+            lock.release()
 
             if sender_link_id in self.links.keys():
                 cost = self.links[sender_link_id]
+                lock.acquire()
                 self.graph.add_edge(self.id, sender_id, sender_link_id)
                 self.graph.add_vertex_link(sender_id,sender_link_id,cost)
-            lock.release()
+                lock.release()
 
 def main():
     if len(sys.argv) != 4:
