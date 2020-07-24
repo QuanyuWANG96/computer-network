@@ -1,5 +1,4 @@
 from graph import Graph
-# from graph import Vertex
 import socket
 import threading
 from threading import Thread
@@ -97,7 +96,6 @@ class Router:
             if D[route] >= sys.maxsize:
                 del self.routing_table[route]
 
-
         # print("D :" + str(D))
         # print("graph : " + str(self.graph))
         # print("routing table: " + str(self.routing_table))
@@ -115,7 +113,6 @@ class Router:
                         neighbor) + ", linkid:" + str(linkID) + ", cost:" + str(cost) + "\n"
                     topo.write(str_line)
             topo.write("\n")
-            # print("write file to topo")
             topo.close()
 
             # wirte to routing table output file
@@ -126,7 +123,6 @@ class Router:
                     self.routing_table[route]["cost"]) + "\n"
                 r_table.write(str_line)
             r_table.write("\n")
-            # print("write file to routing table")
             r_table.close()
 
         lock.release()
@@ -165,7 +161,6 @@ class Router:
                             router_link_cost) + ")")
 
                     # get info from rcv_info, updata graph
-
                     for v in self.graph.get_all_vertex():
                         vtx = self.graph.get_vertex(v)
                         if router_link_id in list(vtx.links.keys()) and router_id != vtx.id:
@@ -184,7 +179,6 @@ class Router:
         # print("begin to receive")
         message_type_buffer = init_buffer[:4]
         message_type = struct.unpack("!i", message_type_buffer)[0]
-        # print("reveive the init relpy, message type: " + str(message_type))
         if message_type not in [1, 2, 3, 4]:
             print(
                 "UDP message has an unknown message_type (the first four bytes). Message type received: {} ({})".format(
@@ -218,6 +212,7 @@ class Router:
                     self.id, len(buffer)))
                 continue
 
+            # unpack received packet
             data = struct.unpack("!iiiiii", buffer)
             message_type = data[0]
             if message_type != 3:
@@ -233,7 +228,7 @@ class Router:
             router_link_cost = data[5]
             print("Received: SID(" + str(sender_id) + "), SLID(" + str(sender_link_id) + "), RID(" + str(
                 router_id) + "), RLID(" + str(router_link_id) + "), LC(" + str(
-                router_link_cost) + ")" )
+                router_link_cost) + ")")
 
             # drop duplicate router info
             if (router_id, router_link_id, router_link_cost) in self.rcv_info:

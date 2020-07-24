@@ -5,9 +5,7 @@ class Vertex:
         self.id = id
         self.adjacent = {}  # key : vertex, value : linkID
         self.links = {}  # key : linkID, value : linkCost
-        # self.distance = sys.maxsize
         self.visited = False
-        # self.next = None
 
     def add_neighbor(self, neighbor, linkID):
         self.adjacent[neighbor] = linkID
@@ -18,20 +16,8 @@ class Vertex:
     def get_all_links(self):
         return self.links.keys()
 
-    # def get_all_neighbors(self):
-    #     return self.adjacent.keys()
-
-    # def set_distance(self, dist):
-    #     self.distance = dist
-    #
-    # def get_distance(self):
-    #     return self.distance
-
     def set_visted(self):
         self.visited = True
-
-    # def set_next(self, next):
-    #     self,next = next
 
     def __str__(self):
         return str(self.id) + ' adjacent: ' + str([x for x in self.adjacent.keys()])
@@ -71,7 +57,6 @@ class Graph:
         for vtx in self.get_all_vertex():
             print("vertex:" + str(vtx))
             print(self.get_vertex(vtx))
-        # print("end")
         return str([self.vertex[x] for x in self.vertex.keys()])
 
 
