@@ -11,9 +11,8 @@ lock = threading.Lock()
 class Router:
     def __init__(self, nfe_ip, nfe_port, id):
         self.id = id
-        # self.vtx = Vertex(id)
         self.graph = Graph()
-        self.routing_table = []
+        self.routing_table = {}  # key: neighbour , value : {key: next_hop, cost, value: neighbour, cost}
         self.cache = []  # [sender_id, sender_link_id, router_id, router_link_id, router_link_cost]
         self.rcv_info = []  # [routerID, routerLinkID, routerLinkCost]
         self.links = {}  # key : linkID, value : linkCost
@@ -21,13 +20,101 @@ class Router:
         self.graph.add_vertex(self.id)
 
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # self.udp_socket.bind((nfe_ip, nfe_port))
 
         # send init message
         init_data = struct.pack("!i", 1)  # message type, 0x01
         init_data += struct.pack("!i", self.id)  # router ID
         print("Sending init message data to NFE")
         self.udp_socket.sendto(init_data, (nfe_ip, nfe_port))
+
+    def dijkstra(self):
+        lock.acquire()
+        N = set()
+        D = {}
+
+        # init routing table
+        adj = list(self.graph.get_vertex(self.id).adjacent.items())
+        for neighbor, linkID in adj:
+            temp = {}
+            temp["next"] = neighbor
+            vtx_adj = self.graph.get_vertex(neighbor)
+            temp["cost"] = vtx_adj.links[linkID]
+            self.routing_table[neighbor] = temp
+
+        # print("%%%%%%%%%%%%%init routing table%%%%%%%%%%%%%%%%%%")
+        # print(self.routing_table)
+
+        # calculate the shortest path
+        # init vertex set and distance
+        for i in list(self.graph.get_all_vertex()):
+            N.add(self.graph.get_vertex(i))
+            D[i] = sys.maxsize
+
+        adj = list(self.graph.get_vertex(self.id).adjacent.items())
+        for neighbor, linkID in adj:
+            vtx_adj = self.graph.get_vertex(neighbor)
+            D[neighbor] = vtx_adj.links[linkID]
+        D[self.id] = 0
+        N.remove(self.graph.get_vertex(self.id))
+
+        while N:
+            min_dist = sys.maxsize
+            next_vtx = 0
+            # find the current min dist
+            for v in N:
+                if D[v.id] < min_dist:
+                    min_dist = D[v.id]
+                    next_vtx = v
+            if next_vtx == 0:
+                break
+            N.remove(next_vtx)
+            self.routing_table[next_vtx.id]["cost"] = min_dist
+
+            # updata all dist
+            next_router = self.graph.get_vertex(next_vtx.id)
+            for neighbor in next_router.adjacent.keys():
+                if not neighbor in self.routing_table:
+                    self.routing_table[neighbor] = {}
+
+                link_id = next_router.adjacent[neighbor]
+                dist_to_neighbor = next_router.links[link_id]
+                new_dist = D[next_vtx.id] + dist_to_neighbor
+                if new_dist < D[neighbor]:
+                    self.routing_table[neighbor]["next"] = self.routing_table[next_vtx.id]["next"]
+                    D[neighbor] =new_dist
+
+        # updata routing table
+        self.routing_table.pop(self.id)
+        for route in self.routing_table.keys():
+            self.routing_table[route]["cost"] = D[route]
+            if D[route] >= sys.maxsize:
+                del self.routing_table[route]
+
+        # write to topology file
+        topo_path = 'topology_'+ str(self.id) + '.out'
+        topo = open(topo_path,'a')
+        for i in list(self.graph.get_all_vertex()):
+            adj = list(self.graph.get_vertex(i).adjacent.items())
+            for neighbor, linkID in adj:
+                vtx_adj = self.graph.get_vertex(neighbor)
+                cost = vtx_adj.links[linkID]
+                str_line = "router:"+ str(self.graph.get_vertex(i).id) + ", router:" +str(neighbor) + ", linkid:" + str(linkID) + ", cost:" + str(cost) + "\n"
+                topo.write(str_line)
+        topo.write("\n")
+        print("write file to topo")
+        topo.close()
+
+        # wirte to routing table output file
+        r_table_path = 'routingtable_' + str(self.id) + '.out'
+        r_table = open(r_table_path, 'a')
+        for route in list(self.routing_table.keys()):
+            str_line = str(route) + ": " + str(self.routing_table[route]["next"]) + ", " + str(self.routing_table[route]["cost"]) + "\n"
+            r_table.write(str_line)
+        r_table.write("\n")
+        print("write file to routing table")
+        r_table.close()
+
+        lock.release()
 
     def send_init(self, nfe_ip, nfe_port):
         # send init link info to nfe
@@ -46,7 +133,7 @@ class Router:
         while True:
             for sender_id, sender_link_id, router_id, router_link_id, router_link_cost in self.cache:
                 if [router_id, router_link_id, router_link_cost] not in self.rcv_info:
-                    print("it is a new link info and have not received")
+                    # print("it is a new link info and have not received")
                     self.rcv_info.append([router_id, router_link_id, router_link_cost])
 
                     # send the info to nfe
@@ -67,9 +154,9 @@ class Router:
                     for v in self.graph.get_all_vertex():
                         vtx = self.graph.get_vertex(v)
                         if router_link_id in vtx.links.keys() and router_id != vtx.id:
-                            self.graph.add_edge(v, router_id, router_link_id, router_link_cost)
-                            print("add edge from " + str(v) + " to " + str(router_id) + " through link " + str(
-                                router_link_id) + "with cost " + str(router_link_cost))
+                            self.graph.add_edge(v, router_id, router_link_id)
+                            # print("add edge from " + str(v) + " to " + str(router_id) + " through link " + str(
+                            #     router_link_id) + "with cost " + str(router_link_cost))
                     lock.release()
 
                 # drop duplicate router info
@@ -77,6 +164,9 @@ class Router:
                     print("Droping: SID(" + str(sender_id) + "), SLID(" + str(sender_link_id) + "), RID(" + str(
                         router_id) + "), RLID(" + str(router_link_id) + "), LC(" + str(
                         router_link_cost) + ")" + "\n")
+
+                # calculate the latest shortest path and updata routing table
+                self.dijkstra()
 
                 # delete cur router info in cache
                 lock.acquire()
@@ -86,10 +176,10 @@ class Router:
     def receive_init(self):
         # receive the init reply
         init_buffer, address = self.udp_socket.recvfrom(4096)
-        print("begin to receive")
+        # print("begin to receive")
         message_type_buffer = init_buffer[:4]
         message_type = struct.unpack("!i", message_type_buffer)[0]
-        print("reveive the init relpy, message type: " + str(message_type))
+        # print("reveive the init relpy, message type: " + str(message_type))
         if message_type not in [1, 2, 3, 4]:
             print(
                 "UDP message has an unknown message_type (the first four bytes). Message type received: {} ({})".format(
@@ -117,7 +207,7 @@ class Router:
         # forwarding phase
         while True:
             buffer, address = self.udp_socket.recvfrom(4096)
-            print("begin to receive forwarding phase")
+            # print("begin to receive forwarding phase")
             if len(buffer) != (6 * 4):  # 7 fields, 32-bit (4 bytes) each
                 print("Virtual Router {} - message length is {} but that doesn't match expected size, ignoring".format(
                     self.id, len(buffer)))
@@ -146,18 +236,11 @@ class Router:
             self.graph.add_vertex(sender_id)
             self.graph.add_vertex(router_id)
             self.graph.add_vertex_link(router_id, router_link_id, router_link_cost)
-            # vtx = self.graph.get_vertex(router_id)
-            # if vtx == None:
-            #     print("can not find this vertex in graph, please check the id")
-            # vtx.add_link(router_link_id, router_link_cost)
+
             if sender_link_id in self.links.keys():
                 cost = self.links[sender_link_id]
-                self.graph.add_edge(self.id, sender_id, sender_link_id, cost)
+                self.graph.add_edge(self.id, sender_id, sender_link_id)
                 self.graph.add_vertex_link(sender_id,sender_link_id,cost)
-                # vtx1 = self.graph.get_vertex(sender_id)
-                # if vtx1 == None:
-                #     print("can not find this vertex in graph, please check the id")
-                # vtx1.add_link(sender_link_id, cost)
             lock.release()
 
 def main():
@@ -180,7 +263,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-

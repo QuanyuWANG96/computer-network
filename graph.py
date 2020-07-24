@@ -3,14 +3,14 @@ import sys
 class Vertex:
     def __init__(self, id):
         self.id = id
-        self.adjacent = {}  # key : vertex, value : [linkID, linkCost]
+        self.adjacent = {}  # key : vertex, value : linkID
         self.links = {}  # key : linkID, value : linkCost
-        self.distance = sys.maxsize
+        # self.distance = sys.maxsize
         self.visited = False
-        self.next = None
+        # self.next = None
 
-    def add_neighbor(self, neighbor, linkID, linkCost):
-        self.adjacent[neighbor] = [linkID]
+    def add_neighbor(self, neighbor, linkID):
+        self.adjacent[neighbor] = linkID
 
     def add_link(self, linkID, linkCost):
         self.links[linkID] = linkCost
@@ -18,23 +18,24 @@ class Vertex:
     def get_all_links(self):
         return self.links.keys()
 
-    def get_all_neighbors(self):
-        return self.adjacent.keys()
+    # def get_all_neighbors(self):
+    #     return self.adjacent.keys()
 
-    def set_distance(self, dist):
-        self.distance = dist
-
-    def get_distance(self):
-        return self.distance
+    # def set_distance(self, dist):
+    #     self.distance = dist
+    #
+    # def get_distance(self):
+    #     return self.distance
 
     def set_visted(self):
         self.visited = True
 
-    def set_next(self, next):
-        self,next = next
+    # def set_next(self, next):
+    #     self,next = next
 
     def __str__(self):
         return str(self.id) + ' adjacent: ' + str([x.id for x in self.adjacent])
+
 
 class Graph:
     def __init__(self):
@@ -57,11 +58,11 @@ class Graph:
         self.add_vertex(n)
         self.vertex[n].add_link(linkID, linkCost)
 
-    def add_edge(self, start, end, linkID, linkCost):
+    def add_edge(self, start, end, linkID):
         self.add_vertex(start)
         self.add_vertex(end)
-        self.vertex[start].add_neighbor(self.vertex[end],linkID, linkCost)
-        self.vertex[end].add_neighbor(self.vertex[start], linkID, linkCost)
+        self.vertex[start].add_neighbor(end,linkID)
+        self.vertex[end].add_neighbor(start, linkID)
 
     def get_all_vertex(self):
         return self.vertex.keys()
