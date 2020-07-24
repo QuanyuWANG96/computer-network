@@ -32,6 +32,8 @@ class Router:
         N = set()
         D = {}
 
+        previous_routing_table = self.routing_table.copy()
+
         # init routing table
         adj = list(self.graph.get_vertex(self.id).adjacent.items())
         for neighbor, linkID in adj:
@@ -41,8 +43,8 @@ class Router:
             temp["cost"] = vtx_adj.links[linkID]
             self.routing_table[neighbor] = temp
 
-        print("%%%%%%%%%%%%%init routing table%%%%%%%%%%%%%%%%%%")
-        print(self.routing_table)
+        # print("%%%%%%%%%%%%%init routing table%%%%%%%%%%%%%%%%%%")
+        # print(self.routing_table)
 
         # calculate the shortest path
         # init vertex set and distance
@@ -96,33 +98,36 @@ class Router:
                 del self.routing_table[route]
 
 
-        print("D :" + str(D))
-        print("graph : " + str(self.graph))
-        print("routing table: " + str(self.routing_table))
+        # print("D :" + str(D))
+        # print("graph : " + str(self.graph))
+        # print("routing table: " + str(self.routing_table))
 
-        # write to topology file
-        topo_path = 'topology_'+ str(self.id) + '.out'
-        topo = open(topo_path,'a')
-        for i in list(self.graph.get_all_vertex()):
-            adj = list(self.graph.get_vertex(i).adjacent.items())
-            for neighbor, linkID in adj:
-                vtx_adj = self.graph.get_vertex(neighbor)
-                cost = vtx_adj.links[linkID]
-                str_line = "router:"+ str(self.graph.get_vertex(i).id) + ", router:" +str(neighbor) + ", linkid:" + str(linkID) + ", cost:" + str(cost) + "\n"
-                topo.write(str_line)
-        topo.write("\n")
-        print("write file to topo")
-        topo.close()
+        if self.routing_table != previous_routing_table:
+            # write to topology file
+            topo_path = 'topology_' + str(self.id) + '.out'
+            topo = open(topo_path, 'a')
+            for i in list(self.graph.get_all_vertex()):
+                adj = list(self.graph.get_vertex(i).adjacent.items())
+                for neighbor, linkID in adj:
+                    vtx_adj = self.graph.get_vertex(neighbor)
+                    cost = vtx_adj.links[linkID]
+                    str_line = "router:" + str(self.graph.get_vertex(i).id) + ", router:" + str(
+                        neighbor) + ", linkid:" + str(linkID) + ", cost:" + str(cost) + "\n"
+                    topo.write(str_line)
+            topo.write("\n")
+            # print("write file to topo")
+            topo.close()
 
-        # wirte to routing table output file
-        r_table_path = 'routingtable_' + str(self.id) + '.out'
-        r_table = open(r_table_path, 'a')
-        for route in list(self.routing_table.keys()):
-            str_line = str(route) + ": " + str(self.routing_table[route]["next"]) + ", " + str(self.routing_table[route]["cost"]) + "\n"
-            r_table.write(str_line)
-        r_table.write("\n")
-        print("write file to routing table")
-        r_table.close()
+            # wirte to routing table output file
+            r_table_path = 'routingtable_' + str(self.id) + '.out'
+            r_table = open(r_table_path, 'a')
+            for route in list(self.routing_table.keys()):
+                str_line = str(route) + ": " + str(self.routing_table[route]["next"]) + ", " + str(
+                    self.routing_table[route]["cost"]) + "\n"
+                r_table.write(str_line)
+            r_table.write("\n")
+            # print("write file to routing table")
+            r_table.close()
 
         lock.release()
 
@@ -141,9 +146,6 @@ class Router:
     def send_forwarding(self, nfe_ip, nfe_port):
         # forwarding phase (LSA)
         while True:
-            # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-            # # print(self.cache)
-            # print(self.rcv_info)
             lock.acquire()
 
             for router_id, router_link_id, router_link_cost in self.rcv_info:
@@ -174,13 +176,6 @@ class Router:
 
             # calculate the latest shortest path and updata routing table
             self.dijkstra()
-
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-            # print(self.cache)
-            print(self.rcv_info)
-
-
-
 
 
     def receive_init(self):
