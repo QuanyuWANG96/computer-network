@@ -1,5 +1,4 @@
 from graph import Graph
-from graph import Vertex
 import socket
 import threading
 from threading import Thread
@@ -17,7 +16,6 @@ class Router:
         self.cache = set()  # [router_id, router_link_id, router_link_cost]
         self.rcv_info = set()  # [routerID, routerLinkID, routerLinkCost]
         self.links = {}  # key : linkID, value : linkCost
-
 
         self.graph.add_vertex(self.id)
 
@@ -44,9 +42,6 @@ class Router:
             temp["cost"] = vtx_adj.links[linkID]
             self.routing_table[neighbor] = temp
 
-        # print("%%%%%%%%%%%%%init routing table%%%%%%%%%%%%%%%%%%")
-        # print(self.routing_table)
-
         # calculate the shortest path
         # init vertex set and distance
         for i in list(self.graph.get_all_vertex()):
@@ -59,9 +54,6 @@ class Router:
             D[neighbor] = vtx_adj.links[linkID]
         D[self.id] = 0
         N.remove(self.graph.get_vertex(self.id))
-        # print("D :"+ str(D))
-        # print("N:" + str(N))
-        # print("graph : " + str(self.graph))
 
         while N:
             min_dist = sys.maxsize
@@ -88,10 +80,7 @@ class Router:
                 if new_dist < D[neighbor]:
                     self.routing_table[neighbor]["next"] = self.routing_table[next_vtx]["next"]
                     D[neighbor] =new_dist
-                    # print("$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-                    # print("D:" + str(D))
 
-        # print("$$$$$$$$$$$$$$$$$$$$$$  final")
         # print("D:" + str(D))
         # updata routing table
         if self.id in self.routing_table.keys():
@@ -101,10 +90,6 @@ class Router:
             self.routing_table[route]["cost"] = D[route]
             if D[route] >= sys.maxsize:
                 del self.routing_table[route]
-
-        # print("D :" + str(D))
-        # print("graph : " + str(self.graph))
-        # print("routing table: " + str(self.routing_table))
 
         if self.routing_table != previous_routing_table:
             # wirte to routing table output file
@@ -191,7 +176,6 @@ class Router:
 
             if cur_graph != previous_graph:
                 # write to topology file
-                # print("cur_graph: " + str(cur_graph))
                 topo_path = 'topology_' + str(self.id) + '.out'
                 topo = open(topo_path, 'a')
                 topo.write("TOPOLOGY\n")
@@ -210,11 +194,9 @@ class Router:
             # calculate the latest shortest path and updata routing table
             self.dijkstra()
 
-
     def receive_init(self):
         # receive the init reply
         init_buffer, address = self.udp_socket.recvfrom(4096)
-        # print("begin to receive")
         message_type_buffer = init_buffer[:4]
         message_type = struct.unpack("!i", message_type_buffer)[0]
         if message_type not in [1, 2, 3, 4]:

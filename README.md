@@ -1,48 +1,56 @@
 # CS656 Computer Network 
 
 Execute Environment:
-This program can be run in Linux student environment at University of Waterloo. I implement the Go-Back-N(GBN) protocol. We are provided with a network emulator Network Emulator (nEmulator).
+This program can be run in Linux student environment at University of Waterloo. I implement the OSPF protocol. We are provided with a network forwarding emulator(nfe.py).
 
 Files:
-1. receiver.py
-2. sender.py
-3. packet.py (provided by professor)
+1. vrouter.py
+2. graph.py
+3. \_\_init__.py
+4. vrouter.sh
+5. nfe.py (provided by professor)
 
 Execute:
-* sender.py
+* nfe.py
 
-command parameters:
+command parameters: ```<IP>```,```<port>```,```<topo_file_path>```
 
-```<host address of the network emulator>```
+execute command example: ```python3 ./nfe.py ubuntu1804-004 18888 test.json```
+* vrouter.py
 
-```<UDP port number used by the emulator to receive data from the sender>```
+command parameters: ```<nfe_IP>``` ,```<nfe_port>```, ```<routerID>```
 
-```<UDP port number used by the sender to receive ACKs from the emulator>```
+execute command example: ```./vrouter.sh ubuntu1804-004 18888 1```
 
-```<name of the file to be transferred>```
-* receiver.py
+Explaination:
+* topology_\<routerID>.out --- topology graph database. Every time an LSA triggers an update to the topology database, it will be output to this file.
 
-command parameters:
+```router:<routerid>,router:<routerid>,linkid:<linkid>,cost:<cost>```
+* routingtable_\<routerID>.out --- Every time the routing table changes, it will be appended to this file.
 
-```<hostname for the network emulator>``` 
+```<destination ID>:<next hop ID>,<total cost>```
+* std output 
 
-```<UDP port number used by the link emulator to receive ACKs from the receiver>```
+(1) Sending(E):SID(<value>),SLID(<value>),RID(<value>),RLID(<value>),LC(<value>)
 
-```<UDP port number used by the receiver to receive data from the emulator>```
+(2) Sending(F):SID(<value>),SLID(<value>),RID(<value>),RLID(<value>),LC(<value>)
 
-```<name of the file into which the received data is written>```
-* Run program
+(3) Received:SID(<value>),SLID(<value>),RID(<value>),RLID(<value>),LC(<value>)
 
-Emulator, on host 1, execute command: ```./nEmulator-linux386 <port1> host2 <port2> <port3> host3 <port4> <max_delay> <discard_prob> <verbose-mode>```
+(4) Dropping:SID(<value>),SLID(<value>),RID(<value>),RLID(<value>),LC(<value>)
+DROPPING means the LSA is going to be dropped
 
-Receiver, on host 2,  execute command: ```./receiver.sh host1 <port3> <port2> <output file>```
+SENDING(F) means the LSA is being forwarded
 
-Sender, on host 3, execute command: ```./sender.sh host1 <port1> <port4> <input file>```
+SENDING(E) means the LSA is being emitted initially
 
-* Run example
+SID means SenderID,
 
-```./nEmulator-linux386 12031 ubuntu1804-004.student.cs.uwaterloo.ca 12034 12033 ubuntu1804-008.student.cs.uwaterloo.ca 12032 1 0.2 1```
+SLID means SenderLinkID
 
-```./receiver.sh ubuntu1804-002.student.cs.uwaterloo.ca 12033 12034 'destination_file.txt'```
+RID means RouterID
 
-```./sender.sh ubuntu1804-002.student.cs.uwaterloo.ca 12031 12032 'large.txt'```
+RLID means RouterLinkID
+
+LC means LinkCost
+
