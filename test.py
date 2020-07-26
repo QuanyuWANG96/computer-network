@@ -1,7 +1,12 @@
-# a = {10:3,2:4}
+a = {10:{3:4},2:4}
 # for i in list(a.items()):
 #     if not i in a:
 #         print(i)
+b = a.copy()
+b[10] = {3:5}
+print(a)
+print(b)
+print(a == b)
 # from os import path
 #
 # p = path.join('/etc', 'sysconfig', 'network')  # 根据不同的系统，将每个字符串组合成路径形式
@@ -16,7 +21,9 @@
 
 
 #
-# a =[[1,2,3], [2,3,4], [4,5,6]]
+a =[[1,2,3], [2,3,4], [4,5,6]]
+for i in range(len(a)):
+    print(str(a[i][0]))
 # b=[[1,2,3]]
 # c = a[:]
 # for i, j, k in a:
@@ -32,11 +39,13 @@
 # print(a)
 # print(c)
 
-a = set()
-a.add((1,2,3))
-a.add((2,4,5))
-print(a)
-for i, j ,k in a:
-    print(str(i) + " " + str(j) + " " + str(k))
-if (4,5,6) not in a:
-    print("aaaaaaaaaaa")
+# a = set()
+# a.add((1,2,3))
+# a.add((2,4,5))
+# print(a)
+# for i, j ,k in a:
+#     print(str(i) + " " + str(j) + " " + str(k))
+# if (4,5,6) not in a:
+#     print("aaaaaaaaaaa")\
+
+a = []

@@ -49,6 +49,8 @@ class Graph:
         self.add_vertex(end)
         self.vertex[start].add_neighbor(end,linkID)
         self.vertex[end].add_neighbor(start, linkID)
+        # print("add edge from " + str(start) + " to " + str(end) + " through link " + str(linkID))
+        # print("add edge from " + str(end) + " to " + str(start) + " through link " + str(linkID))
 
     def get_all_vertex(self):
         return self.vertex.keys()
