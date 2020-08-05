@@ -2,7 +2,7 @@
 
 
 Execute Environment:
-This program can be run in Virtual Box witn Mininet environment. 
+This program can be run in Virtual Box with Mininet environment. 
 Files:
 1. topology.py
 2. parta.sh (including all the ovs commands to finish vii problem)
@@ -10,7 +10,7 @@ Files:
 Execute:
 execute command: ```sudo python topology.py```
 
-After creating th 10 host and 10 switch topology, open a terminal(xterm) for the switch s2 inside Mininet shell,
+After creating the 10 host and 10 switch topology, open a terminal(xterm) for the switch s2 inside Mininet shell,
 execute command: ```xterm s2```
 
 In the xterm terminal for the switch s2, type the command: ```chmod 777 *.sh```, then enter ```./parta.sh```
