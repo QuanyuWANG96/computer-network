@@ -1,16 +1,7 @@
-## CS656 Computer Network End of Assessment
-
-Execute Environment:
-This program can be run in Virtual Box with Mininet environment.
+## CS656 Computer Network 
 
 Files:
-
-Part A: follow ```question_a.md``` file to run.
-
-Part B: follow ```question_b.md``` file to run.
-
-Part C: all the solutions are included in ```question_d.md```.
-
-Part D: all the solutions are included in ```question_d.md```.
-(Part D is also a Graduate Student Project)
-
+* A1---programming assignment 1
+* A2---programming assignment 2
+* A3---programming assignment 3
+* materials---contains all materials we need in this course.
