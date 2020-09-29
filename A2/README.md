@@ -1,7 +1,7 @@
 # CS656 Computer Network 
 
 Execute Environment:
-This program can be run in Linux student environment at University of Waterloo. I implement the Go-Back-N(GBN) protocol. We are provided with a network emulator Network Emulator (nEmulator).
+This program can be run in Linux student environment at University of Waterloo. I implement the Go-Back-N(GBN) protocol. We are provided with a network emulator Network Emulator (nEmulator). After that, I also measured the impact of packet loss and delay on transmission time. You can find in [link to report](https://github.com/QuanyuWANG96/computer-network/blob/master/A2/cs656Assignment2.pdf)
 
 Files:
 1. receiver.py
